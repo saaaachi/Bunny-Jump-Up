@@ -3,26 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bunny Jump Up - 第22弾</title>
+    <title>Bunny Jump Up - v2</title>
     <style>
         body { margin: 0; overflow: hidden; background: #fff9c4; font-family: sans-serif; touch-action: none; }
         #ad-top, #ad-bottom { position: fixed; left: 0; width: 100%; height: 150px; background: #333; z-index: 100; display: flex; align-items: center; justify-content: center; }
         #ad-top { top: 0; } #ad-bottom { bottom: 0; }
         iframe { border: none; width: 100%; height: 150px; }
         canvas { display: block; margin-top: 150px; background: #fffde7; }
-        #ui { position: absolute; top: 160px; left: 0; width: 100%; text-align: center; color: #f57f17; font-size: 26px; font-weight: bold; pointer-events: none; z-index: 10; }
-        #startScreen { position: absolute; top: 150px; left: 0; width: 100%; height: calc(100vh - 300px); background: rgba(255,255,255,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; }
-        #goButton { padding: 15px 45px; font-size: 24px; background: #ff9800; border: none; border-radius: 50px; color: white; font-weight: bold; cursor: pointer; }
+        #ui { position: absolute; top: 160px; left: 0; width: 100%; text-align: center; color: #f57f17; font-size: 26px; font-weight: bold; pointer-events: none; z-index: 10; text-shadow: 1px 1px 0px white; }
+        #startScreen { position: absolute; top: 150px; left: 0; width: 100%; height: calc(100vh - 300px); background: rgba(255,255,255,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; }
+        #goButton { padding: 15px 45px; font-size: 24px; background: #ff9800; border: none; border-radius: 50px; color: white; font-weight: bold; cursor: pointer; box-shadow: 0 4px #e65100; }
     </style>
 </head>
 <body>
-    <div id="ad-top"><iframe src="ad.html"></iframe></div>
-    <div id="ad-bottom"><iframe src="ad.html"></iframe></div>
+    <div id="ad-top"><iframe id="frame-top" src="ad.html"></iframe></div>
+    <div id="ad-bottom"><iframe id="frame-bottom" src="ad.html"></iframe></div>
+    
     <div id="startScreen">
-        <h1 style="color:#ff9800;">Bunny Jump Up</h1>
-        <p>画面の左右をタップして<br>上の足場へ飛び移ろう！🥕</p>
-        <button id="goButton">ジャンプ！</button>
+        <h1 style="color:#ff9800; margin-bottom: 5px;">Bunny Jump Up</h1>
+        <p style="text-align: center; line-height: 1.5;">左右タップでジャンプ！<br>どんどん高く登っていこう！🐰🥕</p>
+        <button id="goButton">スタート！</button>
+        <p id="best-info" style="margin-top:15px; font-weight:bold; color:#f57f17;">BEST: <span id="best-ui">0</span></p>
     </div>
+
     <div id="ui">SCORE: 0</div>
     <canvas id="gameCanvas"></canvas>
 
@@ -30,67 +33,132 @@
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
         const ui = document.getElementById("ui");
+        const startScreen = document.getElementById("startScreen");
+        const bestUi = document.getElementById("best-ui");
+
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight - 300;
 
-        let score = 0, gameActive = false;
-        let player = { x: canvas.width/2, y: canvas.height - 100, vy: 0 };
+        let score = 0;
+        let bestScore = localStorage.getItem("bunny_jump_best") || 0;
+        let gameActive = false;
+        let player = { x: canvas.width/2, y: canvas.height - 100, vy: 0, size: 40 };
         let platforms = [];
+        let cameraY = 0;
+        bestUi.innerText = bestScore;
 
         function initGame() {
+            cameraY = 0;
             platforms = [];
-            for(let i=0; i<6; i++) {
-                platforms.push({ x: Math.random()*(canvas.width-80), y: canvas.height - (i*120) - 50, w: 80 });
+            // 最初の足場（必ず足元にあるように）
+            platforms.push({ x: canvas.width/2 - 50, y: canvas.height - 50, w: 100 });
+            // 初期足場を上に積み上げる
+            for(let i=1; i<10; i++) {
+                addPlatform(canvas.height - (i * 120));
             }
         }
 
+        function addPlatform(y) {
+            platforms.push({
+                x: Math.random() * (canvas.width - 80),
+                y: y,
+                w: 80
+            });
+        }
+
         document.getElementById("goButton").onclick = () => {
-            document.getElementById("startScreen").style.display = "none";
-            gameActive = true; score = 0; player.y = canvas.height - 100; player.vy = 0;
-            initGame(); update();
+            startScreen.style.display = "none";
+            gameActive = true;
+            score = 0;
+            player.x = canvas.width/2;
+            player.y = canvas.height - 100;
+            player.vy = -12; // 初動ジャンプ
+            initGame();
+            update();
         };
 
         window.addEventListener("touchstart", (e) => {
             if(!gameActive) return;
             const touchX = e.touches[0].clientX;
-            player.vy = -12; // ジャンプ
-            if(touchX < canvas.width/2) player.x -= 40; else player.x += 40;
-        });
+            // 横移動
+            if(touchX < canvas.width/2) player.x -= 35;
+            else player.x += 35;
+            e.preventDefault();
+        }, {passive: false});
 
         function update() {
             if(!gameActive) return;
-            ctx.clearRect(0,0,canvas.width, canvas.height);
-            
-            player.vy += 0.5; // 重力
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            player.vy += 0.4; // 重力
             player.y += player.vy;
 
-            // 足場描画
+            // カメラ追従：プレイヤーが画面中央より上にいったらスクロール
+            if (player.y < cameraY + canvas.height / 2) {
+                let diff = (cameraY + canvas.height / 2) - player.y;
+                cameraY -= diff;
+                // 足場が足りなくなったら補充
+                if (platforms[platforms.length - 1].y > cameraY - 100) {
+                    addPlatform(platforms[platforms.length - 1].y - 120);
+                }
+            }
+
+            // 足場描画と判定
             ctx.fillStyle = "#8bc34a";
-            platforms.forEach(p => {
-                ctx.fillRect(p.x, p.y, p.w, 15);
-                // 当たり判定（下降中のみ）
-                if(player.vy > 0 && player.x > p.x-20 && player.x < p.x+p.w+20 && player.y > p.y-20 && player.y < p.y+10) {
-                    player.vy = -12;
-                    score++; ui.innerText = "SCORE: " + score;
+            platforms.forEach((p, index) => {
+                let drawY = p.y - cameraY;
+                ctx.fillRect(p.x, drawY, p.w, 15);
+
+                // 着地判定（下降中のみ）
+                if (player.vy > 0 && 
+                    player.x > p.x - 20 && player.x < p.x + p.w + 20 &&
+                    player.y > p.y - 10 && player.y < p.y + 15) {
+                    player.vy = -13; // 跳ね返り
+                    // スコア更新（登った高さに応じて）
+                    let currentScore = Math.floor((canvas.height - p.y) / 10);
+                    if (currentScore > score) {
+                        score = currentScore;
+                        ui.innerText = "SCORE: " + score;
+                    }
                 }
             });
 
             // プレイヤー描画
-            ctx.font = "50px Arial"; ctx.textAlign = "center";
-            ctx.fillText("🐰", player.x, player.y);
+            ctx.font = "50px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("🐰", player.x, player.y - cameraY);
 
-            // 画面外判定
-            if(player.y > canvas.height) { alert("落っこちた！ SCORE:"+score); location.reload(); return; }
-            if(player.x < 0) player.x = canvas.width; if(player.x > canvas.width) player.x = 0;
+            // 画面外（落下）判定
+            if (player.y - cameraY > canvas.height + 100) {
+                gameOver();
+                return;
+            }
+
+            // 左右ループ
+            if (player.x < 0) player.x = canvas.width;
+            if (player.x > canvas.width) player.x = 0;
 
             requestAnimationFrame(update);
         }
-        // 🚀 広告転生システム（30秒リフレッシュ）
+
+        function gameOver() {
+            gameActive = false;
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem("bunny_jump_best", bestScore);
+            }
+            alert("落っこちちゃった！\nSCORE: " + score);
+            location.reload();
+        }
+
+        // 🚀 30秒リフレッシュシステム（標準装備！）
         setInterval(() => {
-            const iframes = document.querySelectorAll('iframe');
-            iframes.forEach(f => {
-                const s = f.src; f.src = "about:blank";
-                setTimeout(() => f.src = s, 100);
+            ["frame-top", "frame-bottom"].forEach(id => {
+                const f = document.getElementById(id);
+                if(f) {
+                    const s = f.src; f.src = "about:blank";
+                    setTimeout(() => f.src = s, 100);
+                }
             });
         }, 30000);
     </script>
