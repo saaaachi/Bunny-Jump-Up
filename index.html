@@ -85,6 +85,14 @@
 
             requestAnimationFrame(update);
         }
+        // 🚀 広告転生システム（30秒リフレッシュ）
+        setInterval(() => {
+            const iframes = document.querySelectorAll('iframe');
+            iframes.forEach(f => {
+                const s = f.src; f.src = "about:blank";
+                setTimeout(() => f.src = s, 100);
+            });
+        }, 30000);
     </script>
 </body>
 </html>
