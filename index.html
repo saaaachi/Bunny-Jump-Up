@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bunny Jump Up - 第22弾</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #fff9c4; font-family: sans-serif; touch-action: none; }
+        #ad-top, #ad-bottom { position: fixed; left: 0; width: 100%; height: 150px; background: #333; z-index: 100; display: flex; align-items: center; justify-content: center; }
+        #ad-top { top: 0; } #ad-bottom { bottom: 0; }
+        iframe { border: none; width: 100%; height: 150px; }
+        canvas { display: block; margin-top: 150px; background: #fffde7; }
+        #ui { position: absolute; top: 160px; left: 0; width: 100%; text-align: center; color: #f57f17; font-size: 26px; font-weight: bold; pointer-events: none; z-index: 10; }
+        #startScreen { position: absolute; top: 150px; left: 0; width: 100%; height: calc(100vh - 300px); background: rgba(255,255,255,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; }
+        #goButton { padding: 15px 45px; font-size: 24px; background: #ff9800; border: none; border-radius: 50px; color: white; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div id="ad-top"><iframe src="ad.html"></iframe></div>
+    <div id="ad-bottom"><iframe src="ad.html"></iframe></div>
+    <div id="startScreen">
+        <h1 style="color:#ff9800;">Bunny Jump Up</h1>
+        <p>画面の左右をタップして<br>上の足場へ飛び移ろう！🥕</p>
+        <button id="goButton">ジャンプ！</button>
+    </div>
+    <div id="ui">SCORE: 0</div>
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const ui = document.getElementById("ui");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight - 300;
+
+        let score = 0, gameActive = false;
+        let player = { x: canvas.width/2, y: canvas.height - 100, vy: 0 };
+        let platforms = [];
+
+        function initGame() {
+            platforms = [];
+            for(let i=0; i<6; i++) {
+                platforms.push({ x: Math.random()*(canvas.width-80), y: canvas.height - (i*120) - 50, w: 80 });
+            }
+        }
+
+        document.getElementById("goButton").onclick = () => {
+            document.getElementById("startScreen").style.display = "none";
+            gameActive = true; score = 0; player.y = canvas.height - 100; player.vy = 0;
+            initGame(); update();
+        };
+
+        window.addEventListener("touchstart", (e) => {
+            if(!gameActive) return;
+            const touchX = e.touches[0].clientX;
+            player.vy = -12; // ジャンプ
+            if(touchX < canvas.width/2) player.x -= 40; else player.x += 40;
+        });
+
+        function update() {
+            if(!gameActive) return;
+            ctx.clearRect(0,0,canvas.width, canvas.height);
+            
+            player.vy += 0.5; // 重力
+            player.y += player.vy;
+
+            // 足場描画
+            ctx.fillStyle = "#8bc34a";
+            platforms.forEach(p => {
+                ctx.fillRect(p.x, p.y, p.w, 15);
+                // 当たり判定（下降中のみ）
+                if(player.vy > 0 && player.x > p.x-20 && player.x < p.x+p.w+20 && player.y > p.y-20 && player.y < p.y+10) {
+                    player.vy = -12;
+                    score++; ui.innerText = "SCORE: " + score;
+                }
+            });
+
+            // プレイヤー描画
+            ctx.font = "50px Arial"; ctx.textAlign = "center";
+            ctx.fillText("🐰", player.x, player.y);
+
+            // 画面外判定
+            if(player.y > canvas.height) { alert("落っこちた！ SCORE:"+score); location.reload(); return; }
+            if(player.x < 0) player.x = canvas.width; if(player.x > canvas.width) player.x = 0;
+
+            requestAnimationFrame(update);
+        }
+    </script>
+</body>
+</html>
