@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bunny Jump Up - 第22弾</title>
+    <title>Bunny Jump Up - v22.3</title>
     <style>
         * { box-sizing: border-box; }
         body { margin: 0; overflow: hidden; background: #fff9c4; font-family: sans-serif; touch-action: none; position: fixed; width: 100%; height: 100%; }
@@ -12,12 +12,11 @@
         #ad-bottom { position: absolute; bottom: 0; left: 0; width: 100%; height: 100px; background: #333; z-index: 1; }
         iframe { border: none; width: 100%; height: 100%; }
 
-        /* 【ここが重要】bottomを「150px」まで大胆に引き上げました。 
-           これでキャンバスの下端が広告より確実に上にきます。 */
+        /* ゲームエリア：広告に被らないよう上下をしっかり空ける */
         #game-outer {
             position: absolute; top: 150px; bottom: 150px; left: 0; right: 0;
             background: #fffde7; overflow: hidden; z-index: 10;
-            border-bottom: 3px solid #f57f17; /* 境界線を見やすく追加 */
+            border-bottom: 5px solid #f57f17; /* 判定ラインを太くしました */
         }
         canvas { display: block; width: 100%; height: 100%; }
         
@@ -91,12 +90,15 @@
 
         function initPlatforms() {
             platforms = [];
-            // キャンバスの下端ギリギリ（広告より上）に最初の足場を置く
-            let firstY = canvas.height - 40; 
+            // 【修正の核心】
+            // キャンバスの下端から100px上の位置を「最初の足場」にします。
+            // これでオレンジ線（判定ライン）より確実に上に足場が出ます。
+            let firstY = canvas.height - 100; 
             platforms.push({ x: canvas.width/2 - 50, y: firstY, w: 100 });
             
-            for(let i=1; i<10; i++) {
-                addPlatform(firstY - (i * 120));
+            // 2枚目以降を生成
+            for(let i=1; i<15; i++) {
+                addPlatform(firstY - (i * 100));
             }
         }
 
@@ -112,8 +114,9 @@
             resize(); 
             
             player.x = canvas.width/2;
-            player.y = canvas.height - 100; // プレイヤーも確実に見える位置から
-            player.vy = -12;
+            // 足場の少し上にバニーを配置して、確実に着地させる
+            player.y = canvas.height - 180; 
+            player.vy = 0; // 最初は勝手に飛ばず、重力で最初の足場に着地させる
             initPlatforms();
             update();
         };
@@ -134,25 +137,29 @@
             player.vy += 0.4;
             player.y += player.vy;
 
-            if (player.y < cameraY + canvas.height / 2) {
-                let diff = (cameraY + canvas.height / 2) - player.y;
+            // カメラ追従：プレイヤーが画面の1/3より上にいったらスクロール開始
+            if (player.y < cameraY + canvas.height / 3) {
+                let diff = (cameraY + canvas.height / 3) - player.y;
                 cameraY -= diff;
+                // 足場を補充
                 if (platforms[platforms.length - 1].y > cameraY - 100) {
-                    addPlatform(platforms[platforms.length - 1].y - 120);
+                    addPlatform(platforms[platforms.length - 1].y - 100);
                 }
             }
 
+            // 足場描画
             ctx.fillStyle = "#8bc34a";
             platforms.forEach((p) => {
                 let drawY = p.y - cameraY;
-                if(drawY > -50 && drawY < canvas.height + 50) {
+                if(drawY > -50 && drawY < canvas.height + 100) {
                     ctx.fillRect(p.x, drawY, p.w, 15);
                 }
 
+                // 着地判定
                 if (player.vy > 0 && 
                     player.x > p.x - 25 && player.x < p.x + p.w + 25 &&
-                    player.y > p.y - 12 && player.y < p.y + 15) {
-                    player.vy = -13;
+                    player.y > p.y - 10 && player.y < p.y + 15) {
+                    player.vy = -13; // ジャンプ
                     let currentScore = Math.floor((canvas.height - p.y) / 10);
                     if (currentScore > score) {
                         score = currentScore;
@@ -161,17 +168,19 @@
                 }
             });
 
+            // プレイヤー描画
             ctx.font = "50px Arial";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText("🐰", player.x, player.y - cameraY);
 
-            // 落下判定（足場が見えている範囲で終わるように）
-            if (player.y - cameraY > canvas.height + 10) {
+            // 落下判定：オレンジの線を越えたらアウト
+            if (player.y - cameraY > canvas.height) {
                 gameOver();
                 return;
             }
 
+            // 左右ループ
             if (player.x < 0) player.x = canvas.width;
             if (player.x > canvas.width) player.x = 0;
 
@@ -188,7 +197,7 @@
             menuTitle.innerText = "GAME OVER";
             menuTitle.style.color = "#d32f2f";
             gameDesc.style.display = "none";
-            goButton.innerText = "もう一度飛ぶ！";
+            goButton.innerText = "リトライ！";
             adMid.style.display = "flex"; 
             startScreen.style.display = "flex";
         }
