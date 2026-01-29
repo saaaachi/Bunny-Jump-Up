@@ -8,14 +8,13 @@
         * { box-sizing: border-box; }
         body { margin: 0; overflow: hidden; background: #fff9c4; font-family: sans-serif; touch-action: none; position: fixed; width: 100%; height: 100%; }
         
-        /* 上下広告エリア */
         #ad-top { position: absolute; top: 0; left: 0; width: 100%; height: 150px; background: #333; z-index: 1000; }
         #ad-bottom { position: absolute; bottom: 0; left: 0; width: 100%; height: 100px; background: #333; z-index: 1; }
         iframe { border: none; width: 100%; height: 100%; }
 
-        /* ゲームエリア（下の余白を100pxに増やして広告被りを防止） */
+        /* ゲーム画面。bottomをさらに広げて120pxに。 */
         #game-outer {
-            position: absolute; top: 150px; bottom: 100px; left: 0; right: 0;
+            position: absolute; top: 150px; bottom: 120px; left: 0; right: 0;
             background: #fffde7; overflow: hidden; z-index: 10;
         }
         canvas { display: block; width: 100%; height: 100%; }
@@ -24,7 +23,7 @@
         
         #startScreen { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(255,255,255,0.92); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; z-index: 50;
+            background: rgba(255,255,255,0.95); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; z-index: 50;
             padding-top: 10px;
         }
 
@@ -90,10 +89,13 @@
 
         function initPlatforms() {
             platforms = [];
-            // 最初の足場を少し高め（下から80px）に設置
-            platforms.push({ x: canvas.width/2 - 50, y: canvas.height - 80, w: 100 });
+            // 【重要】最初の足場を画面下から「150px」上げた位置に固定！絶対に広告に被りません
+            let firstY = canvas.height - 150;
+            platforms.push({ x: canvas.width/2 - 50, y: firstY, w: 100 });
+            
+            // 2番目以降の足場
             for(let i=1; i<10; i++) {
-                addPlatform(canvas.height - 80 - (i * 120));
+                addPlatform(firstY - (i * 120));
             }
         }
 
@@ -104,11 +106,12 @@
         goButton.onclick = () => {
             startScreen.style.display = "none";
             gameActive = true;
-            score = 0;
-            cameraY = 0;
+            score = 0; cameraY = 0;
             ui.innerText = "SCORE: 0";
+            resize(); // 開始直前に再計算
+            
             player.x = canvas.width/2;
-            player.y = canvas.height - 130; // プレイヤーの開始位置も調整
+            player.y = canvas.height - 200; // プレイヤーも高めに配置
             player.vy = -12;
             initPlatforms();
             update();
@@ -130,6 +133,7 @@
             player.vy += 0.4;
             player.y += player.vy;
 
+            // カメラ追従
             if (player.y < cameraY + canvas.height / 2) {
                 let diff = (cameraY + canvas.height / 2) - player.y;
                 cameraY -= diff;
@@ -141,11 +145,14 @@
             ctx.fillStyle = "#8bc34a";
             platforms.forEach((p) => {
                 let drawY = p.y - cameraY;
-                ctx.fillRect(p.x, drawY, p.w, 15);
+                // 描画範囲内のみ描画
+                if(drawY > -50 && drawY < canvas.height + 50) {
+                    ctx.fillRect(p.x, drawY, p.w, 15);
+                }
 
                 if (player.vy > 0 && 
-                    player.x > p.x - 20 && player.x < p.x + p.w + 20 &&
-                    player.y > p.y - 10 && player.y < p.y + 15) {
+                    player.x > p.x - 25 && player.x < p.x + p.w + 25 &&
+                    player.y > p.y - 12 && player.y < p.y + 15) {
                     player.vy = -13;
                     let currentScore = Math.floor((canvas.height - p.y) / 10);
                     if (currentScore > score) {
@@ -160,8 +167,8 @@
             ctx.textBaseline = "middle";
             ctx.fillText("🐰", player.x, player.y - cameraY);
 
-            // 落下判定（画面下に少し余裕を持たせる）
-            if (player.y - cameraY > canvas.height + 50) {
+            // 落下判定（画面端で即死するように調整）
+            if (player.y - cameraY > canvas.height + 20) {
                 gameOver();
                 return;
             }
