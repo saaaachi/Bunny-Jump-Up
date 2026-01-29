@@ -8,27 +8,20 @@
         * { box-sizing: border-box; }
         body { margin: 0; overflow: hidden; background: #fff9c4; font-family: sans-serif; touch-action: none; position: fixed; width: 100%; height: 100%; }
         
-        /* 上下広告エリア（150px） */
-        #ad-top {
-            position: absolute; top: 0; left: 0; width: 100%; height: 150px;
-            background: #333; z-index: 1000;
-        }
-        #ad-bottom {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 60px;
-            background: #333; z-index: 1; /* PR広告の裏に潜る */
-        }
+        /* 上下広告エリア */
+        #ad-top { position: absolute; top: 0; left: 0; width: 100%; height: 150px; background: #333; z-index: 1000; }
+        #ad-bottom { position: absolute; bottom: 0; left: 0; width: 100%; height: 100px; background: #333; z-index: 1; }
         iframe { border: none; width: 100%; height: 100%; }
 
-        /* ゲームエリア */
+        /* ゲームエリア（下の余白を100pxに増やして広告被りを防止） */
         #game-outer {
-            position: absolute; top: 150px; bottom: 60px; left: 0; right: 0;
+            position: absolute; top: 150px; bottom: 100px; left: 0; right: 0;
             background: #fffde7; overflow: hidden; z-index: 10;
         }
         canvas { display: block; width: 100%; height: 100%; }
         
         #ui { position: absolute; top: 10px; left: 0; width: 100%; text-align: center; color: #f57f17; font-size: 26px; font-weight: bold; pointer-events: none; text-shadow: 1px 1px 0px white; z-index: 20; }
         
-        /* メニュー画面（上詰め配置） */
         #startScreen { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(255,255,255,0.92); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; z-index: 50;
@@ -38,31 +31,11 @@
         #menuHeader { text-align: center; margin-bottom: 5px; }
         #menuTitle { color: #ff9800; margin: 0; font-size: 24px; }
         #best-info { font-weight: bold; color: #f57f17; font-size: 16px; margin: 0; }
+        #ad-middle-container { width: 300px; height: 160px; background: #000; margin: 5px 0; display: none; justify-content: center; align-items: center; overflow: hidden; flex-shrink: 0; }
 
-        /* 中央広告（スリム枠160px） */
-        #ad-middle-container {
-            width: 300px; height: 160px; background: #000;
-            margin: 5px 0; display: none;
-            justify-content: center; align-items: center;
-            overflow: hidden; flex-shrink: 0;
-        }
-
-        /* ボタン群 */
-        .btn-group {
-            display: flex; flex-direction: column; align-items: center;
-            width: 100%; gap: 8px;
-        }
-        #goButton { 
-            padding: 12px 0; font-size: 20px; background: #ff9800; border: none; 
-            border-radius: 50px; color: white; font-weight: bold; cursor: pointer; 
-            width: 240px; box-shadow: 0 4px #e65100; 
-        }
-        .link-btn {
-            padding: 10px 0; font-size: 14px; background: #9b59b6;
-            border: none; border-radius: 50px; color: white; font-weight: bold;
-            text-decoration: none; width: 240px; text-align: center;
-            box-shadow: 0 4px #8e44ad;
-        }
+        .btn-group { display: flex; flex-direction: column; align-items: center; width: 100%; gap: 8px; }
+        #goButton { padding: 12px 0; font-size: 20px; background: #ff9800; border: none; border-radius: 50px; color: white; font-weight: bold; cursor: pointer; width: 240px; box-shadow: 0 4px #e65100; }
+        .link-btn { padding: 10px 0; font-size: 14px; background: #9b59b6; border: none; border-radius: 50px; color: white; font-weight: bold; text-decoration: none; width: 240px; text-align: center; box-shadow: 0 4px #8e44ad; }
     </style>
 </head>
 <body>
@@ -79,11 +52,9 @@
                 <p id="gameDesc" style="margin: 5px 0; font-size: 14px; text-align: center;">左右タップでジャンプ！<br>どんどん高く登っていこう！🐰🥕</p>
                 <p id="best-info">BEST: <span id="best-ui">0</span></p>
             </div>
-
             <div id="ad-middle-container">
                 <script src="https://adm.shinobi.jp/s/1e6de436ea850948e238e975a93767eb"></script>
             </div>
-
             <div class="btn-group">
                 <button id="goButton">スタート！</button>
                 <a href="https://saaaachi.github.io/Bark-Panic/" class="link-btn">他のゲームはこちら</a>
@@ -114,23 +85,20 @@
 
         let score = 0, bestScore = localStorage.getItem("bunny_jump_best") || 0;
         let gameActive = false, platforms = [], cameraY = 0;
-        let player = { x: 0, y: 0, vy: 0, size: 40 };
+        let player = { x: 0, y: 0, vy: 0 };
         bestUi.innerText = bestScore;
 
         function initPlatforms() {
             platforms = [];
-            platforms.push({ x: canvas.width/2 - 50, y: canvas.height - 50, w: 100 });
+            // 最初の足場を少し高め（下から80px）に設置
+            platforms.push({ x: canvas.width/2 - 50, y: canvas.height - 80, w: 100 });
             for(let i=1; i<10; i++) {
-                addPlatform(canvas.height - (i * 120));
+                addPlatform(canvas.height - 80 - (i * 120));
             }
         }
 
         function addPlatform(y) {
-            platforms.push({
-                x: Math.random() * (canvas.width - 80),
-                y: y,
-                w: 80
-            });
+            platforms.push({ x: Math.random() * (canvas.width - 80), y: y, w: 80 });
         }
 
         goButton.onclick = () => {
@@ -140,7 +108,7 @@
             cameraY = 0;
             ui.innerText = "SCORE: 0";
             player.x = canvas.width/2;
-            player.y = canvas.height - 100;
+            player.y = canvas.height - 130; // プレイヤーの開始位置も調整
             player.vy = -12;
             initPlatforms();
             update();
@@ -159,10 +127,9 @@
             if(!gameActive) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            player.vy += 0.4; // 重力
+            player.vy += 0.4;
             player.y += player.vy;
 
-            // カメラ追従
             if (player.y < cameraY + canvas.height / 2) {
                 let diff = (cameraY + canvas.height / 2) - player.y;
                 cameraY -= diff;
@@ -171,7 +138,6 @@
                 }
             }
 
-            // 足場
             ctx.fillStyle = "#8bc34a";
             platforms.forEach((p) => {
                 let drawY = p.y - cameraY;
@@ -189,19 +155,17 @@
                 }
             });
 
-            // プレイヤー描画
             ctx.font = "50px Arial";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText("🐰", player.x, player.y - cameraY);
 
-            // 落下判定
-            if (player.y - cameraY > canvas.height + 100) {
+            // 落下判定（画面下に少し余裕を持たせる）
+            if (player.y - cameraY > canvas.height + 50) {
                 gameOver();
                 return;
             }
 
-            // 左右ループ
             if (player.x < 0) player.x = canvas.width;
             if (player.x > canvas.width) player.x = 0;
 
@@ -215,7 +179,6 @@
                 localStorage.setItem("bunny_jump_best", bestScore);
                 bestUi.innerText = bestScore;
             }
-            
             menuTitle.innerText = "GAME OVER";
             menuTitle.style.color = "#d32f2f";
             gameDesc.style.display = "none";
