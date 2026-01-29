@@ -12,10 +12,12 @@
         #ad-bottom { position: absolute; bottom: 0; left: 0; width: 100%; height: 100px; background: #333; z-index: 1; }
         iframe { border: none; width: 100%; height: 100%; }
 
-        /* ゲーム画面。bottomをさらに広げて120pxに。 */
+        /* 【ここが重要】bottomを「150px」まで大胆に引き上げました。 
+           これでキャンバスの下端が広告より確実に上にきます。 */
         #game-outer {
-            position: absolute; top: 150px; bottom: 120px; left: 0; right: 0;
+            position: absolute; top: 150px; bottom: 150px; left: 0; right: 0;
             background: #fffde7; overflow: hidden; z-index: 10;
+            border-bottom: 3px solid #f57f17; /* 境界線を見やすく追加 */
         }
         canvas { display: block; width: 100%; height: 100%; }
         
@@ -89,11 +91,10 @@
 
         function initPlatforms() {
             platforms = [];
-            // 【重要】最初の足場を画面下から「150px」上げた位置に固定！絶対に広告に被りません
-            let firstY = canvas.height - 150;
+            // キャンバスの下端ギリギリ（広告より上）に最初の足場を置く
+            let firstY = canvas.height - 40; 
             platforms.push({ x: canvas.width/2 - 50, y: firstY, w: 100 });
             
-            // 2番目以降の足場
             for(let i=1; i<10; i++) {
                 addPlatform(firstY - (i * 120));
             }
@@ -108,10 +109,10 @@
             gameActive = true;
             score = 0; cameraY = 0;
             ui.innerText = "SCORE: 0";
-            resize(); // 開始直前に再計算
+            resize(); 
             
             player.x = canvas.width/2;
-            player.y = canvas.height - 200; // プレイヤーも高めに配置
+            player.y = canvas.height - 100; // プレイヤーも確実に見える位置から
             player.vy = -12;
             initPlatforms();
             update();
@@ -133,7 +134,6 @@
             player.vy += 0.4;
             player.y += player.vy;
 
-            // カメラ追従
             if (player.y < cameraY + canvas.height / 2) {
                 let diff = (cameraY + canvas.height / 2) - player.y;
                 cameraY -= diff;
@@ -145,7 +145,6 @@
             ctx.fillStyle = "#8bc34a";
             platforms.forEach((p) => {
                 let drawY = p.y - cameraY;
-                // 描画範囲内のみ描画
                 if(drawY > -50 && drawY < canvas.height + 50) {
                     ctx.fillRect(p.x, drawY, p.w, 15);
                 }
@@ -167,8 +166,8 @@
             ctx.textBaseline = "middle";
             ctx.fillText("🐰", player.x, player.y - cameraY);
 
-            // 落下判定（画面端で即死するように調整）
-            if (player.y - cameraY > canvas.height + 20) {
+            // 落下判定（足場が見えている範囲で終わるように）
+            if (player.y - cameraY > canvas.height + 10) {
                 gameOver();
                 return;
             }
@@ -202,7 +201,7 @@
                     setTimeout(() => f.src = s, 100);
                 }
             });
-        }, 30000);
+        }, 29000);
     </script>
 </body>
 </html>
