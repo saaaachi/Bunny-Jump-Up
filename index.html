@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bunny Jump Up - v22.3</title>
+    <title>Bunny Jump Up - v26.8</title>
     <style>
         * { box-sizing: border-box; }
         body { margin: 0; overflow: hidden; background: #fff9c4; font-family: sans-serif; touch-action: none; position: fixed; width: 100%; height: 100%; }
         
-        #ad-top { position: absolute; top: 0; left: 0; width: 100%; height: 150px; background: #333; z-index: 1000; }
-        #ad-bottom { position: absolute; bottom: 0; left: 0; width: 100%; height: 100px; background: #333; z-index: 1; }
-        iframe { border: none; width: 100%; height: 100%; }
+        /* 広告枠：150px */
+        #ad-top, #ad-bottom { width: 100%; height: 150px; background: #333; display: flex; align-items: center; justify-content: center; flex-shrink: 0; z-index: 1000; position: relative; }
+        iframe { border: none; width: 100%; height: 100%; background: #333; }
 
-        /* ゲームエリア：広告に被らないよう上下をしっかり空ける */
+        /* ゲームエリア */
         #game-outer {
-            position: absolute; top: 150px; bottom: 150px; left: 0; right: 0;
+            flex-grow: 1; position: relative; width: 100%;
             background: #fffde7; overflow: hidden; z-index: 10;
-            border-bottom: 5px solid #f57f17; /* 判定ラインを太くしました */
+            border-bottom: 5px solid #f57f17;
         }
         canvas { display: block; width: 100%; height: 100%; }
         
@@ -24,23 +24,36 @@
         
         #startScreen { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(255,255,255,0.95); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; z-index: 50;
-            padding-top: 10px;
+            background: rgba(255,255,255,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50;
+            padding: 20px 0;
         }
 
         #menuHeader { text-align: center; margin-bottom: 5px; }
         #menuTitle { color: #ff9800; margin: 0; font-size: 24px; }
         #best-info { font-weight: bold; color: #f57f17; font-size: 16px; margin: 0; }
-        #ad-middle-container { width: 300px; height: 160px; background: #000; margin: 5px 0; display: none; justify-content: center; align-items: center; overflow: hidden; flex-shrink: 0; }
+        
+        /* 中央広告 */
+        #ad-middle-container { 
+            width: 320px; height: 100px; background: #eee; margin: 15px 0; 
+            display: none; justify-content: center; align-items: center; 
+            overflow: hidden; flex-shrink: 0; border: 1px solid #ddd;
+            transition: opacity 0.3s;
+        }
 
-        .btn-group { display: flex; flex-direction: column; align-items: center; width: 100%; gap: 8px; }
-        #goButton { padding: 12px 0; font-size: 20px; background: #ff9800; border: none; border-radius: 50px; color: white; font-weight: bold; cursor: pointer; width: 240px; box-shadow: 0 4px #e65100; }
-        .link-btn { padding: 10px 0; font-size: 14px; background: #9b59b6; border: none; border-radius: 50px; color: white; font-weight: bold; text-decoration: none; width: 240px; text-align: center; box-shadow: 0 4px #8e44ad; }
+        .btn-group { display: flex; flex-direction: column; align-items: center; width: 100%; gap: 12px; }
+        #goButton { padding: 15px 0; font-size: 20px; background: #ff9800; border: none; border-radius: 50px; color: white; font-weight: bold; cursor: pointer; width: 240px; box-shadow: 0 4px #e65100; transition: 0.2s; }
+        #goButton:disabled { background: #ccc; box-shadow: none; color: #888; }
+        .link-btn { padding: 12px 0; font-size: 16px; background: #9b59b6; border: none; border-radius: 50px; color: white; font-weight: bold; text-decoration: none; width: 240px; text-align: center; box-shadow: 0 4px #8e44ad; }
+
+        /* 大広告用 */
+        #bigAdScreen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; justify-content: center; align-items: center; }
+        .ad-frame-wrapper { width: 95%; height: 85%; position: relative; }
+        .ad-close-btn { position: absolute; top: -15px; right: -15px; color: white; font-size: 22px; font-weight: bold; cursor: pointer; background: rgba(0,0,0,0.8); width: 44px; height: 44px; border-radius: 50%; display: none; align-items: center; justify-content: center; z-index: 3100; border: 2px solid white; }
     </style>
 </head>
-<body>
+<body style="display: flex; flex-direction: column;">
 
-    <div id="ad-top"><iframe id="frame-top" src="ad.html"></iframe></div>
+    <div id="ad-top"><iframe id="frame-top" src="ad.html?pos=top"></iframe></div>
 
     <div id="game-outer">
         <div id="ui">SCORE: 0</div>
@@ -52,73 +65,56 @@
                 <p id="gameDesc" style="margin: 5px 0; font-size: 14px; text-align: center;">左右タップでジャンプ！<br>どんどん高く登っていこう！🐰🥕</p>
                 <p id="best-info">BEST: <span id="best-ui">0</span></p>
             </div>
+            
             <div id="ad-middle-container">
-                <script src="https://adm.shinobi.jp/s/1e6de436ea850948e238e975a93767eb"></script>
+                <div id="im-8b492cea6667490da71c488bdcc7cfc8">
+                    <script async src="https://imp-adedge.i-mobile.co.jp/script/v1/spot.js?20220104"></script>
+                    <script>(window.adsbyimobile=window.adsbyimobile||[]).push({pid:84561,mid:590804,asid:1924211,type:"banner",display:"inline",elementid:"im-8b492cea6667490da71c488bdcc7cfc8"})</script>
+                </div>
             </div>
+
             <div class="btn-group">
                 <button id="goButton">スタート！</button>
-                <a href="https://saaaachi.github.io/Bark-Panic/" class="link-btn">他のゲームはこちら</a>
+                <a href="jump.html" class="link-btn">遊び方・コツ</a>
+            </div>
+        </div>
+
+        <div id="bigAdScreen">
+            <div class="ad-frame-wrapper">
+                <div id="ad-close-btn" class="ad-close-btn" onclick="closeBigAd()"></div>
+                <iframe id="ad-large-frame" src="" style="width:100%; height:100%; border:none;"></iframe>
             </div>
         </div>
     </div>
 
-    <div id="ad-bottom"><iframe id="frame-bottom" src="ad.html"></iframe></div>
+    <div id="ad-bottom"><iframe id="frame-bottom" src="ad.html?pos=bottom"></iframe></div>
 
     <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
-        const ui = document.getElementById("ui");
-        const startScreen = document.getElementById("startScreen");
-        const menuTitle = document.getElementById("menuTitle");
-        const gameDesc = document.getElementById("gameDesc");
-        const adMid = document.getElementById("ad-middle-container");
-        const goButton = document.getElementById("goButton");
-        const bestUi = document.getElementById("best-ui");
-        const gameOuter = document.getElementById("game-outer");
+        const canvas = document.getElementById("gameCanvas"), ctx = canvas.getContext("2d"), ui = document.getElementById("ui"), startScreen = document.getElementById("startScreen"), menuTitle = document.getElementById("menuTitle"), gameDesc = document.getElementById("gameDesc"), adMid = document.getElementById("ad-middle-container"), goButton = document.getElementById("goButton"), bestUi = document.getElementById("best-ui"), gameOuter = document.getElementById("game-outer");
 
-        function resize() {
-            canvas.width = gameOuter.clientWidth;
-            canvas.height = gameOuter.clientHeight;
-        }
+        function resize() { canvas.width = gameOuter.clientWidth; canvas.height = gameOuter.clientHeight; }
         window.addEventListener('resize', resize);
         resize();
 
-        let score = 0, bestScore = localStorage.getItem("bunny_jump_best") || 0;
-        let gameActive = false, platforms = [], cameraY = 0;
-        let player = { x: 0, y: 0, vy: 0 };
+        let score = 0, bestScore = localStorage.getItem("bunny_jump_best") || 0, playCount = 0;
+        let gameActive = false, platforms = [], cameraY = 0, player = { x: 0, y: 0, vy: 0 };
         bestUi.innerText = bestScore;
 
         function initPlatforms() {
             platforms = [];
-            // 【修正の核心】
-            // キャンバスの下端から100px上の位置を「最初の足場」にします。
-            // これでオレンジ線（判定ライン）より確実に上に足場が出ます。
             let firstY = canvas.height - 100; 
             platforms.push({ x: canvas.width/2 - 50, y: firstY, w: 100 });
-            
-            // 2枚目以降を生成
-            for(let i=1; i<15; i++) {
-                addPlatform(firstY - (i * 100));
-            }
+            for(let i=1; i<15; i++) { addPlatform(firstY - (i * 100)); }
         }
 
-        function addPlatform(y) {
-            platforms.push({ x: Math.random() * (canvas.width - 80), y: y, w: 80 });
-        }
+        function addPlatform(y) { platforms.push({ x: Math.random() * (canvas.width - 80), y: y, w: 80 }); }
 
         goButton.onclick = () => {
-            startScreen.style.display = "none";
-            gameActive = true;
-            score = 0; cameraY = 0;
-            ui.innerText = "SCORE: 0";
+            startScreen.style.display = "none"; adMid.style.display = "none";
+            gameActive = true; score = 0; cameraY = 0; ui.innerText = "SCORE: 0";
             resize(); 
-            
-            player.x = canvas.width/2;
-            // 足場の少し上にバニーを配置して、確実に着地させる
-            player.y = canvas.height - 180; 
-            player.vy = 0; // 最初は勝手に飛ばず、重力で最初の足場に着地させる
-            initPlatforms();
-            update();
+            player.x = canvas.width/2; player.y = canvas.height - 180; player.vy = 0;
+            initPlatforms(); update();
         };
 
         window.addEventListener("touchstart", (e) => {
@@ -133,84 +129,59 @@
         function update() {
             if(!gameActive) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            player.vy += 0.4; player.y += player.vy;
 
-            player.vy += 0.4;
-            player.y += player.vy;
-
-            // カメラ追従：プレイヤーが画面の1/3より上にいったらスクロール開始
             if (player.y < cameraY + canvas.height / 3) {
                 let diff = (cameraY + canvas.height / 3) - player.y;
                 cameraY -= diff;
-                // 足場を補充
-                if (platforms[platforms.length - 1].y > cameraY - 100) {
-                    addPlatform(platforms[platforms.length - 1].y - 100);
-                }
+                if (platforms[platforms.length - 1].y > cameraY - 100) { addPlatform(platforms[platforms.length - 1].y - 100); }
             }
 
-            // 足場描画
             ctx.fillStyle = "#8bc34a";
             platforms.forEach((p) => {
                 let drawY = p.y - cameraY;
-                if(drawY > -50 && drawY < canvas.height + 100) {
-                    ctx.fillRect(p.x, drawY, p.w, 15);
-                }
-
-                // 着地判定
-                if (player.vy > 0 && 
-                    player.x > p.x - 25 && player.x < p.x + p.w + 25 &&
-                    player.y > p.y - 10 && player.y < p.y + 15) {
-                    player.vy = -13; // ジャンプ
+                if(drawY > -50 && drawY < canvas.height + 100) { ctx.fillRect(p.x, drawY, p.w, 15); }
+                if (player.vy > 0 && player.x > p.x - 25 && player.x < p.x + p.w + 25 && player.y > p.y - 10 && player.y < p.y + 15) {
+                    player.vy = -13;
                     let currentScore = Math.floor((canvas.height - p.y) / 10);
-                    if (currentScore > score) {
-                        score = currentScore;
-                        ui.innerText = "SCORE: " + score;
-                    }
+                    if (currentScore > score) { score = currentScore; ui.innerText = "SCORE: " + score; }
                 }
             });
 
-            // プレイヤー描画
-            ctx.font = "50px Arial";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
+            ctx.font = "50px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
             ctx.fillText("🐰", player.x, player.y - cameraY);
 
-            // 落下判定：オレンジの線を越えたらアウト
-            if (player.y - cameraY > canvas.height) {
-                gameOver();
-                return;
-            }
-
-            // 左右ループ
+            if (player.y - cameraY > canvas.height) { gameOver(); return; }
             if (player.x < 0) player.x = canvas.width;
             if (player.x > canvas.width) player.x = 0;
-
             requestAnimationFrame(update);
         }
 
         function gameOver() {
-            gameActive = false;
-            if (score > bestScore) {
-                bestScore = score;
-                localStorage.setItem("bunny_jump_best", bestScore);
-                bestUi.innerText = bestScore;
-            }
+            gameActive = false; playCount++;
+            if (score > bestScore) { bestScore = score; localStorage.setItem("bunny_jump_best", bestScore); bestUi.innerText = bestScore; }
+            
+            goButton.innerText = "お待ちください..."; goButton.disabled = true;
+            adMid.style.display = "flex"; adMid.style.opacity = "0.4";
             menuTitle.innerText = "GAME OVER";
-            menuTitle.style.color = "#d32f2f";
             gameDesc.style.display = "none";
-            goButton.innerText = "リトライ！";
-            adMid.style.display = "flex"; 
             startScreen.style.display = "flex";
+
+            setTimeout(() => { adMid.style.opacity = "1"; goButton.disabled = false; goButton.innerText = "リトライ！"; }, 1500);
+            if (playCount === 3 || (playCount > 3 && (playCount - 3) % 7 === 0)) { setTimeout(showBigAd, 500); }
         }
 
-        setInterval(() => {
-            ["frame-top", "frame-bottom"].forEach(id => {
-                const f = document.getElementById(id);
-                if(f) {
-                    const s = f.src; f.src = "about:blank";
-                    setTimeout(() => f.src = s, 100);
-                }
-            });
-        }, 29000);
+        function showBigAd() {
+            const screen = document.getElementById("bigAdScreen"), closeBtn = document.getElementById("ad-close-btn");
+            document.getElementById("ad-large-frame").src = "./ad.large.html?t=" + Date.now();
+            screen.style.display = "flex"; let countdown = 5; closeBtn.style.display = "flex"; closeBtn.innerText = countdown; closeBtn.style.pointerEvents = "none";
+            const timerInt = setInterval(() => { countdown--; closeBtn.innerText = countdown; if (countdown <= 0) { clearInterval(timerInt); closeBtn.innerText = "×"; closeBtn.style.pointerEvents = "auto"; } }, 1000);
+        }
+
+        function closeBigAd() { document.getElementById("bigAdScreen").style.display = "none"; document.getElementById("ad-large-frame").src = ""; }
+
+        setInterval(() => { const f = document.getElementById('frame-top'); if(f) f.src = "ad.html?pos=top&t=" + Date.now(); }, 30000);
+        setTimeout(() => { setInterval(() => { const f = document.getElementById('frame-bottom'); if(f) f.src = "ad.html?pos=bottom&t=" + Date.now(); }, 30000); }, 15000);
     </script>
 </body>
 </html>
